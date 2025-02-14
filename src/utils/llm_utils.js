@@ -45,4 +45,36 @@ async function generateText(promptText) {
   }
 }
 
-export { generateText };
+async function chatWithHistory(promptText, history = []) {
+  try {
+    // Convert history items to the correct format if they aren't already
+    const formattedHistory = history.map(item => ({
+      role: item.role,
+      parts: [{ text: item.parts }]
+    }));
+
+    const chat = await model.startChat({
+      history: formattedHistory,
+      generationConfig: {
+        temperature: 0.7,
+        topK: 1,
+        topP: 1,
+        maxOutputTokens: 2048,
+      },
+    });
+
+    const result = await chat.sendMessage(promptText);
+    const responseText = result.response.text();
+    const groundingMetadata = result.response.candidates[0]?.groundingMetadata;
+
+    return { responseText, groundingMetadata };
+  } catch (error) {
+    console.error("Error in chat with history:", error);
+    return {
+      responseText: "Error in chat. Please check the logs.",
+      groundingMetadata: null,
+    };
+  }
+}
+
+export { generateText, chatWithHistory };
